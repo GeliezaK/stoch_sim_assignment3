@@ -25,53 +25,74 @@ def read_optimal_route(filepath):
 
 class TSPOptimizer:
 
-    def __init__(self, input_graph, chain_length, discard_index, cooling_schedule='log'):
+    def __init__(self, config, chain_length, inner_chain_length, Tstep, cooling_schedule='log'):
         """
 
-        :param input_graph: The TSP problem as a networkx.graph where each node is a city and each edge between nodes is
-        a connection between cities.
+        :param config: The TSP Configuration
         :param cooling_schedule: The cooling schedule T(i) for the simulated annealing. A function that returns the
         temperature given the current iteration i.
         :param chain_length: The length of the Markov chain n.
-        :param discard_index: The index of the iteration k until when results are discarded. The Markov chain from index
+        :param inner_chain_length: The index of the iteration k until when results are discarded. The Markov chain from index
         k+1 to n is kept.
         """
-        self.input_graph = input_graph
-        self.problem_size = len(input_graph)
+        self.config = config
+        self.problem_size = len(config.graph)
         self.cooling_schedule = cooling_schedule
+        self.Tstep = Tstep
         self.chain_length = chain_length
-        self.discard_index = discard_index
+        self.inner_chain_length = inner_chain_length
 
-    def find_optimum(self):
+    def find_optimum(self, Tstart):
         """"""
         # Step 1: choose random permutation of nodes as start path
         route = np.random.permutation(self.problem_size)
         print(route)
         # Step 2: for n which is the length of the markov chain: Perform a step of simulated annealing
-        for k in range(self.chain_length):
-            route = self.anneal(route, k)
+        improvement_found = True
+        T_k = Tstart
+        chain_ind = 0
+        while improvement_found and (chain_ind < self.chain_length):
+            improvement_found = False
+            num_reductions = 0
+            print(f"Temperature: {T_k}, chain: {chain_ind}")
+            for i in range(self.inner_chain_length*self.problem_size):
+                # Arbitrarily set the number of changes per temperature level to 100 times the number of cities
+                route, diff = self.anneal(route, T_k)
+                if diff < 0:
+                    num_reductions += 1
+                    improvement_found = True
+                if num_reductions >= 10*self.problem_size:
+                    # After 10 times the number of length reductions as the number of cities are found, continue with
+                    # next temperature level
+                    print(f"Decrease temperature after {i} iterations.")
+                    break
+
+            # Increase temperature level and chain length and repeat
+            T_k = self.T(T_k)
+            chain_ind += 1
         return route
 
-    def anneal(self, route, k):
+    def anneal(self, route, T_k):
         # Step 1: Choose two random cities i and j, such that i != j and i, j != 0
         available_indices = list(np.arange(1, self.problem_size))
-        city_i, city_j = random.sample(available_indices, k=2)
+        while True:
+            city_i, city_j = random.sample(available_indices, k=2)
+            if np.abs(city_i - city_j) > 2:
+                # Do not swap if the resulting route would be the same
+                break
         # Sort indices ascending
         a, b = [city_i, city_j] if city_i < city_j else [city_j, city_i]
         # Calculate cost difference between old and new route
         diff = self.cost_difference(route, a, b)
         if diff < 0:
             # Step 3a: if length(new route) < length(old route): always accept
-            route = self.swap2opt(route, city_i, city_j)
+            route = self.swap2opt(route, a, b)
         else:
             # Step 3b: else draw random number U from (0,1). If U < e^{-|cost difference|/T(k)}, accept new route anyways
             rand = np.random.random()
-            if rand < np.exp(-np.abs(diff) / self.T(k)):
-                print("Cost difference: ", diff)
-                print(f'Accept new route! Rand = {np.round(rand, 2)} '
-                      f'< {np.round(np.exp(-np.abs(diff) / self.T(k)), 2)}')
-                route = self.swap2opt(route, city_i, city_j)
-        return route
+            if rand < np.exp(-np.abs(diff)/T_k):
+                route = self.swap2opt(route, a, b)
+        return route, diff
 
     def swap2opt(self, route, a, b):
         """Perform a 2-opt swap of the route. """
@@ -100,9 +121,8 @@ class TSPOptimizer:
 
     def dist(self, a, b):
         """Return the distance between node a and b in the input graph. """
-        return self.input_graph[a][b]['distance']
+        return self.config.graph[a][b]['distance']
 
-    def T(self, k):
+    def T(self, Tprev):
         """Cooling schedule"""
-        T0 = 1000
-        return T0 / (1 + np.log(1 + k))
+        return self.Tstep*Tprev
