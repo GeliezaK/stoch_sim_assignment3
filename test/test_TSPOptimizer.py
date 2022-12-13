@@ -8,7 +8,7 @@ from TSPOptimizer import TSPOptimizer
 
 @pytest.fixture
 def target(config):
-    target = TSPOptimizer(config, 100, 100)
+    target = TSPOptimizer(config = config, chain_length=200, inner_chain_length=100)
     return target
 
 
@@ -27,7 +27,7 @@ def test_swap2opt(target):
 
 def test_control_parameters(target):
     route = list(np.arange(target.problem_size))
-    T_start = 1000
+    T_start = 10000
     num_it = 100
     data = np.zeros(num_it)
     for b in range(num_it):
@@ -42,6 +42,27 @@ def test_control_parameters(target):
     # Initial acceptance rate should be between 50% and 80%
     assert 0.5 < np.mean(data) < 0.8
 
+
+def test_log_cooling(target):
+    gen0 = target.logarithmic_cooling(800)
+    gen1 = target.logarithmic_cooling(10000)
+    gen2 = target.logarithmic_cooling(2000)
+    plt.semilogy(np.arange(0,201), list(gen0), label="C=800")
+    plt.semilogy(np.arange(0,201), list(gen1), label="C=10000")
+    plt.semilogy(np.arange(0,201), list(gen2), label="C=2000")
+    plt.xlabel("Temperature level (k)")
+    plt.ylabel("Temperature")
+    plt.legend()
+    plt.show()
+
+
+def test_exponential_cooling_gen(target):
+    gen = target.exponential_cooling(0.95, 1000)
+    x = 1000/0.95
+    for i in range(target.chain_length):
+        k = x
+        x = next(gen)
+        assert np.isclose(x, 0.95 * k )
 
 
 

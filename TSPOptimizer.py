@@ -1,31 +1,10 @@
 import numpy as np
 import random
-import re
-
-
-def read_optimal_route(filepath):
-    """Returns the optimal route as a list"""
-    f = open(filepath, "r")
-    while True:
-        line = f.readline()
-        if "TOUR_SECTION" in line:
-            break
-    # Construct list
-    opt_route = []
-    while True:
-        # Read cities to list
-        line = f.readline()
-        if "EOF" in line:
-            break
-        node = int(re.search(r'\d+', line).group())
-        if node > 0:
-            opt_route.append(node)
-    return opt_route
 
 
 class TSPOptimizer:
 
-    def __init__(self, config, chain_length, inner_chain_length, Tstep, cooling_schedule='log'):
+    def __init__(self, config, chain_length, inner_chain_length):
         """
 
         :param config: The TSP Configuration
@@ -37,38 +16,46 @@ class TSPOptimizer:
         """
         self.config = config
         self.problem_size = len(config.graph)
-        self.cooling_schedule = cooling_schedule
-        self.Tstep = Tstep
         self.chain_length = chain_length
         self.inner_chain_length = inner_chain_length
 
-    def find_optimum(self, Tstart):
+
+    def find_optimum(self, cooling_schedule='exponential', Tstart=1000,
+                 Tstep=0.95, C=1000):
         """"""
+        if cooling_schedule == 'exponential':
+            assert Tstart != None, 'If exponential cooling schedule is chosen, you have to provide Tstart!'
+            assert Tstep != None, 'If exponential cooling schedule is chosen, you have to provide Tstep!'
+            genTemp = self.exponential_cooling(Tstart, Tstep)
+        else:
+            assert C != None, 'If logarithmic cooling schedule is chosen, you have to provide C. '
+            genTemp = self.logarithmic_cooling(C)
+
         # Step 1: choose random permutation of nodes as start path
         route = np.random.permutation(self.problem_size)
         print(route)
         # Step 2: for n which is the length of the markov chain: Perform a step of simulated annealing
         improvement_found = True
-        T_k = Tstart
+        T_k = next(genTemp)
         chain_ind = 0
         while improvement_found and (chain_ind < self.chain_length):
             improvement_found = False
             num_reductions = 0
             print(f"Temperature: {T_k}, chain: {chain_ind}")
-            for i in range(self.inner_chain_length*self.problem_size):
+            for i in range(self.inner_chain_length * self.problem_size):
                 # Arbitrarily set the number of changes per temperature level to 100 times the number of cities
                 route, diff = self.anneal(route, T_k)
                 if diff < 0:
                     num_reductions += 1
                     improvement_found = True
-                if num_reductions >= 10*self.problem_size:
+                if num_reductions >= 10 * self.problem_size:
                     # After 10 times the number of length reductions as the number of cities are found, continue with
                     # next temperature level
                     print(f"Decrease temperature after {i} iterations.")
                     break
 
             # Increase temperature level and chain length and repeat
-            T_k = self.T(T_k)
+            T_k = next(genTemp)
             chain_ind += 1
         return route
 
@@ -90,7 +77,7 @@ class TSPOptimizer:
         else:
             # Step 3b: else draw random number U from (0,1). If U < e^{-|cost difference|/T(k)}, accept new route anyways
             rand = np.random.random()
-            if rand < np.exp(-np.abs(diff)/T_k):
+            if rand < np.exp(-np.abs(diff) / T_k):
                 route = self.swap2opt(route, a, b)
         return route, diff
 
@@ -123,6 +110,22 @@ class TSPOptimizer:
         """Return the distance between node a and b in the input graph. """
         return self.config.graph[a][b]['distance']
 
-    def T(self, Tprev):
-        """Cooling schedule"""
-        return self.Tstep*Tprev
+    def exponential_cooling(self, Tstart, cool_step):
+        """Exponential cooling schedule generator. """
+        Tprev = Tstart
+        k = 0
+        yield Tstart
+        while k < self.chain_length:
+            new_T = cool_step * Tprev
+            yield new_T
+            Tprev = new_T
+            k += 1
+
+    def logarithmic_cooling(self, C):
+        """Logarithmic cooling"""
+        k = 1
+        yield C
+        while k <= self.chain_length:
+            # NB: log(0) is not defined
+            yield C/(k**2*(1 +np.log(k+1)))
+            k += 1
