@@ -43,21 +43,27 @@ def test_control_parameters(target):
     assert 0.5 < np.mean(data) < 0.8
 
 
-def test_log_cooling(target):
-    gen0 = target.logarithmic_cooling(800)
-    gen1 = target.logarithmic_cooling(10000)
-    gen2 = target.logarithmic_cooling(2000)
-    plt.semilogy(np.arange(0,201), list(gen0), label="C=800")
-    plt.semilogy(np.arange(0,201), list(gen1), label="C=10000")
-    plt.semilogy(np.arange(0,201), list(gen2), label="C=2000")
+def test_cooling(target):
+    gen0 = target.exponential_cooling(10000, 0.9)
+    gen4 = target.exponential_cooling(10000, 0.95)
+    gen1 = target.boltzmann_cooling(10000)
+    gen2 = target.cauchy_cooling(10000)
+    gen3 = target.fast_cooling(10000)
+    plt.semilogy(np.arange(0,201), list(gen0), linestyle="-", label="Exponential, $c = 0.9$")
+    plt.semilogy(np.arange(0,201), list(gen4), linestyle="-", label="Exponential, $c = 0.95$")
+    plt.semilogy(np.arange(0,201), list(gen1), linestyle="dashed", label="Boltzmann")
+    plt.semilogy(np.arange(0,201), list(gen2), linestyle="-.",label="Cauchy")
+    plt.semilogy(np.arange(0,201), list(gen3), linestyle="dotted", label="Fast")
     plt.xlabel("Temperature level (k)")
     plt.ylabel("Temperature")
+    plt.title("Cooling Schedules")
     plt.legend()
+    plt.savefig("../figures/cooling-schedules.png")
     plt.show()
 
 
 def test_exponential_cooling_gen(target):
-    gen = target.exponential_cooling(0.95, 1000)
+    gen = target.exponential_cooling(1000, 0.95)
     x = 1000/0.95
     for i in range(target.chain_length):
         k = x
@@ -65,16 +71,3 @@ def test_exponential_cooling_gen(target):
         assert np.isclose(x, 0.95 * k )
 
 
-
-def test_cooling(target):
-    t = np.arange(0.01, 1, 0.01)
-    accept = lambda diff: np.exp(-np.abs(diff)/t)
-    plt.plot(t, accept(5), label='5')
-    plt.plot(t, accept(10), label='10')
-    plt.plot(t, accept(30), label='30')
-    plt.plot(t, accept(50), label='50')
-    plt.xlabel('Temperature level (k)')
-    plt.ylabel('Probability of accepting')
-    plt.xlim((1, 0))
-    plt.legend(loc='lower right')
-    plt.show()

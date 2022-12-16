@@ -67,6 +67,7 @@ class TSPConfiguration:
     def init_config(self):
         self.table = self.construct_coordinate_table()
         self.graph = self.construct_input_graph()
+        print("Initialized config!")
         return self
 
     def plot_2D(self, route=[]):

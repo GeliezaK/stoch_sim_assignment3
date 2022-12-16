@@ -6,7 +6,7 @@ class TSPOptimizer:
 
     def __init__(self, config, chain_length, inner_chain_length):
         """
-
+        Initialize the TSP-Optimizer.
         :param config: The TSP Configuration
         :param cooling_schedule: The cooling schedule T(i) for the simulated annealing. A function that returns the
         temperature given the current iteration i.
@@ -19,47 +19,74 @@ class TSPOptimizer:
         self.chain_length = chain_length
         self.inner_chain_length = inner_chain_length
 
+    def find_optimum(self, cooling_schedule='fast', Tstart=10000,
+                     Tstep=None):
+        """
 
-    def find_optimum(self, cooling_schedule='exponential', Tstart=1000,
-                 Tstep=0.95, C=1000):
-        """"""
-        if cooling_schedule == 'exponential':
-            assert Tstart != None, 'If exponential cooling schedule is chosen, you have to provide Tstart!'
-            assert Tstep != None, 'If exponential cooling schedule is chosen, you have to provide Tstep!'
-            genTemp = self.exponential_cooling(Tstart, Tstep)
-        else:
-            assert C != None, 'If logarithmic cooling schedule is chosen, you have to provide C. '
-            genTemp = self.logarithmic_cooling(C)
+        :param cooling_schedule: (string) the name of the cooling schedule. Possible values: 'exponential', 'boltzmann',
+    'cauchy' or 'fast'. Default = 'fast'. If 'exponential' is specified, the parameter Tstep must be given additionally!
+        :param Tstart: (float) Start temperature. Default=10000
+        :param Tstep: (float) Scaling parameter for 'exponential' cooling. Must be 0 < Tstep < 1. In the
+    exponential cooling, the temperature at level k is calculated as T(k) = Tstart*(Tstep**k).
+        :return:
+        """
+        genTemp = self.init_cooling_schedule(Tstart, Tstep, cooling_schedule)
 
         # Step 1: choose random permutation of nodes as start path
         route = np.random.permutation(self.problem_size)
-        print(route)
         # Step 2: for n which is the length of the markov chain: Perform a step of simulated annealing
-        improvement_found = True
         T_k = next(genTemp)
         chain_ind = 0
-        while improvement_found and (chain_ind < self.chain_length):
-            improvement_found = False
+        while chain_ind < self.chain_length:
             num_reductions = 0
-            print(f"Temperature: {T_k}, chain: {chain_ind}")
+            print(f"Temperature: {np.round(T_k, 4)}, k: {chain_ind}")
             for i in range(self.inner_chain_length * self.problem_size):
                 # Arbitrarily set the number of changes per temperature level to 100 times the number of cities
                 route, diff = self.anneal(route, T_k)
                 if diff < 0:
                     num_reductions += 1
-                    improvement_found = True
                 if num_reductions >= 10 * self.problem_size:
                     # After 10 times the number of length reductions as the number of cities are found, continue with
                     # next temperature level
                     print(f"Decrease temperature after {i} iterations.")
                     break
 
+            yield route
             # Increase temperature level and chain length and repeat
             T_k = next(genTemp)
             chain_ind += 1
-        return route
+
+    def init_cooling_schedule(self, Tstart, Tstep, cooling_schedule):
+        """
+        Initialize the temperature generator with the specified cooling schedule.
+        :param Tstart: (float) Start temperature
+        :param Tstep: (float) Scaling parameter for 'exponential' cooling. Must be 0 < Tstep < 1. In the
+    exponential cooling, the temperature at level k is calculated as T(k) = Tstart*(Tstep**k).
+        :param cooling_schedule: (string) the name of the cooling schedule. Possible values: 'exponential', 'boltzmann',
+    'cauchy' or 'fast'. Default = 'fast'. If 'exponential' is specified, the parameter Tstep must be given additionally!
+        :return: generator object that gives the current temperature.
+        """
+        if cooling_schedule == 'exponential':
+            assert Tstep != None, 'If exponential cooling schedule is chosen, you have to provide Tstep!'
+            assert 0 < Tstep != 1, 'Tstep must be between 0 and 1: 0 < Tstep < 1. '
+            genTemp = self.exponential_cooling(Tstart, Tstep)
+        elif cooling_schedule == 'boltzmann':
+            genTemp = self.boltzmann_cooling(Tstart)
+        elif cooling_schedule == 'cauchy':
+            genTemp = self.cauchy_cooling(Tstart)
+        else:
+            # Choose fast cooling
+            genTemp = self.fast_cooling(Tstart)
+        return genTemp
 
     def anneal(self, route, T_k):
+        """
+        Perform one step of the Metropolis algorithm
+        :param route: (list) the current solution
+        :param T_k: (float) the current temperature
+        :return: route, diff. route is a list with the new solution. diff is a float that specifies the difference
+        between the last solution and the new solution. It may be positive.
+        """
         # Step 1: Choose two random cities i and j, such that i != j and i, j != 0
         available_indices = list(np.arange(1, self.problem_size))
         while True:
@@ -82,7 +109,13 @@ class TSPOptimizer:
         return route, diff
 
     def swap2opt(self, route, a, b):
-        """Perform a 2-opt swap of the route. """
+        """
+        Perform a 2-opt swap of the route.
+        :param route: (list) the current solution
+        :param a: (int) Start index of the path to be reversed.
+        :param b: (int) End index of the path to be reversed.
+        :return: new_route: (list) the new route after reversing the path from a to b
+        """
         route = list(route)
         new_route = [None] * len(route)
         # Take route[start] to route[a] and add to new route in order
@@ -96,6 +129,13 @@ class TSPOptimizer:
         return new_route
 
     def cost_difference(self, route, v1, v2):
+        """
+        Determine the cost difference after performing 2-opt.
+        :param route:
+        :param v1:
+        :param v2:
+        :return:
+        """
         # New distance:  dist(city_i, city_j) + dist(city_i+1, city_j+1)
         # Old distance: dist(city_i, city_i+1) + dist(city_j, city_j+1)
         assert v1 < v2
@@ -121,11 +161,32 @@ class TSPOptimizer:
             Tprev = new_T
             k += 1
 
-    def logarithmic_cooling(self, C):
-        """Logarithmic cooling"""
+    def boltzmann_cooling(self, Tstart):
+        """Logarithmic cooling (Boltzmann cooling)"""
+        yield Tstart
         k = 1
-        yield C
         while k <= self.chain_length:
-            # NB: log(0) is not defined
-            yield C/(k**2*(1 +np.log(k+1)))
+            yield Tstart / np.log(k)
+            k += 1
+
+    def cauchy_cooling(self, Tstart):
+        """Cauchy cooling"""
+        yield Tstart
+        k = 1
+        while k <= self.chain_length:
+            yield Tstart / k
+            k += 1
+
+    def fast_cooling(self, Tstart):
+        """From Ingber(1989): fast exponential cooling."""
+        yield Tstart
+        k = 1
+        Tfinal = 10e-4
+        D = 2
+        m = - np.log(Tfinal / Tstart)
+        n = np.log(self.chain_length)
+        c = m * np.exp(-(n / D))
+        while k <= self.chain_length:
+            cool_step = np.exp(-c * (k ** (1 / D)))
+            yield Tstart * cool_step
             k += 1
