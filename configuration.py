@@ -36,11 +36,13 @@ class TSPConfiguration:
         while True:
             # Read coordinates to table
             line = f.readline()
-            values = list(map(int, re.findall(r'\d+', line)))
-            if len(values) == 3:
-                coord_table[values[0] - 1, :] = np.array([values[1], values[2]])
             if "EOF" in line:
                 break
+            value_strings = line.split()
+            values = [int(float(x)) for x in value_strings]
+            # values = list(map(int, re.findall(r'\d+', line)))
+            if len(values) == 3:
+                coord_table[values[0] - 1, :] = np.array([values[1], values[2]])
         return coord_table
 
     def construct_input_graph(self):
@@ -94,8 +96,12 @@ class TSPConfiguration:
         return length
 
 if __name__ == '__main__':
-    filepath = './tsp_configurations/eil51.tsp.txt'
+    filepath = './tsp_configurations/a280.tsp.txt'
     config = TSPConfiguration(filepath).init_config()
+    # route = []
+    # with open("fast_numit25_a280.csv_min_route") as f:
+    #     for line in f:
+    #         route.append(int(float(line)))
     route = np.random.permutation(len(config.table))
     print(min(route))
     config.plot_2D(route)
