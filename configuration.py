@@ -74,7 +74,8 @@ class TSPConfiguration:
 
     def plot_2D(self, route=[]):
         plt.plot(self.table[:,0], self.table[:,1], 'o')
-        plt.title("Configuration in 2D-plane")
+        plt.axis('equal')
+        plt.title("Best solution found for a280 with Cauchy cooling\nwith a chain length of 500")
         plt.xlabel("X-Coordinate")
         plt.ylabel("Y-Coordinate")
         if route != []:
@@ -84,6 +85,7 @@ class TSPConfiguration:
                 x1, x2 = self.table[city_i, 0], self.table[city_j, 0]
                 y1, y2 = self.table[city_i, 1], self.table[city_j, 1]
                 plt.plot([x1, x2], [y1, y2], 'r-')
+        plt.savefig("figures/cauchy_numit25_chain500_a280_bestsolution.png")
         plt.show()
 
     def length(self, route):
@@ -98,12 +100,11 @@ class TSPConfiguration:
 if __name__ == '__main__':
     filepath = './tsp_configurations/a280.tsp.txt'
     config = TSPConfiguration(filepath).init_config()
-    # route = []
-    # with open("fast_numit25_a280.csv_min_route") as f:
-    #     for line in f:
-    #         route.append(int(float(line)))
-    route = np.random.permutation(len(config.table))
-    print(min(route))
+    route = []
+    with open("cauchy_numit25_chain500_a280.csv_min_route") as f:
+        for line in f:
+            route.append(int(float(line)))
+    # route = np.random.permutation(len(config.table))
+    # print(min(route))
     config.plot_2D(route)
     print(config.length(route))
-

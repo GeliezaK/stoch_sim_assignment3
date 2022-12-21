@@ -126,15 +126,15 @@ def simulate_config(chain_length, num_it, cooling_schedule_name, filepath, Tstep
 def run_simulations():
     global config
     # Configure problem
-    filepath = './tsp_configurations/pcb442.tsp.txt'
+    filepath = './tsp_configurations/a280.tsp.txt'
     config = TSPConfiguration(filepath).init_config()
     # Read solution
     global opt_route
-    optimal_route_path = './tsp_configurations/pcb442.opt.tour.txt'
+    optimal_route_path = './tsp_configurations/a280.opt.tour.txt'
     opt_route = read_optimal_route(optimal_route_path)
     opt_route = [value - 1 for value in opt_route]
-    print(opt_route)
-    config.plot_2D(opt_route)
+    # print(opt_route)
+    # config.plot_2D(opt_route)
     print("Length of optimal route: ", config.length(opt_route[:-1]))
 
     # Call this function from console with different cooling schedules:
@@ -145,29 +145,49 @@ def run_simulations():
     # 4. 'cauchy', Tstep = none, filepath='cauchy_numit25_a280.csv'
     # 5. 'fast', Tstep = none, filepath='fast_numit25_a280.csv'
     # The data is automatically saved to csv files.
-    simulate_config(chain_length=200, num_it=25, cooling_schedule_name='exponential',
-                    filepath='exponential095_numit25_pcb442.csv', Tstep=0.95)
+    # simulate_config(chain_length=500, num_it=25, cooling_schedule_name='cauchy',
+    #                 filepath='cauchy_numit25_chain500_a280.csv', Tstep=None)
 
 
 if __name__ == '__main__':
+    start = time.time()
+    
     run_simulations()
+
+    end = time.time()
+    print(f"Simulation took {(end - start) / 60} minutes.")
 
     # Read from csv
     # In order to plot all data, read the files of each configuration and pass to function plot_single_config()
-    data_exp095 = np.genfromtxt('exponential095_numit25_pcb442.csv', delimiter=',')
+    # data_exp05 = np.genfromtxt('exponential05_numit25_a280.csv', delimiter=',')
     # data_exp095 = np.genfromtxt('exponential095_numit25_a280.csv', delimiter=',')
     # data_exp09 = np.genfromtxt('exponential09_numit25_a280.csv', delimiter=',')
     # data_boltz = np.genfromtxt('boltzmann_numit25_a280.csv', delimiter=',')
     # data_cauchy = np.genfromtxt('cauchy_numit25_a280.csv', delimiter=',')
     # data_fast = np.genfromtxt('fast_numit25_a280.csv', delimiter=',')
+
+    data_cauchy = np.genfromtxt('cauchy_numit25_chain500_a280.csv', delimiter=',')
+
+    # data_fast = np.genfromtxt('fast_numit25_pcb442.csv', delimiter=',')
+    # data_exp095 = np.genfromtxt('exponential095_numit25_pcb442.csv', delimiter=',')
+
     plt.xlabel("Chain length (k)")
     plt.ylabel("Length of route")
-    plot_single_config(data_exp095, 'Exponential, $c=0.95$', '-', 'blue')
+
     # plot_single_config(data_exp095, 'Exponential, $c=0.95$', '-', 'blue')
     # plot_single_config(data_exp09, 'Exponential, $c=0.9$', '-', 'cyan')
+    # plot_single_config(data_exp05, 'Exponential, $c=0.5$', '-', 'yellow')
     # plot_single_config(data_boltz, 'Boltzmann', '-', 'red')
-    # plot_single_config(data_cauchy, 'Cauchy', '-', 'green')
-    # plot_single_config(data_fast, 'Fast$', '-', 'purple')
+    plot_single_config(data_cauchy, 'Cauchy', '-', 'green')
+    # plot_single_config(data_fast, 'Fast', '-', 'purple')
+
+    plt.axhline(2583, label='Optimal solution', color='black', linestyle='--')
+
+    # plt.ticklabel_format(style='sci', axis='y', scilimits=(0, 0))
+
+    # plt.xlim(170, 200)
+    # plt.ylim(2500, 4100)
+
     plt.legend()
-    plt.savefig("pcb442_exponential.png")
+    plt.savefig("a280_fast_chain500.png")
     plt.show()
