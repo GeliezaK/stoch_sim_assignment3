@@ -166,7 +166,7 @@ if __name__ == '__main__':
     # data_cauchy = np.genfromtxt('cauchy_numit25_a280.csv', delimiter=',')
     # data_fast = np.genfromtxt('fast_numit25_a280.csv', delimiter=',')
 
-    data_cauchy = np.genfromtxt('cauchy_numit25_chain500_a280.csv', delimiter=',')
+    data_cauchy = np.genfromtxt('data/cauchy_numit25_chain500_a280.csv', delimiter=',')
 
     # data_fast = np.genfromtxt('fast_numit25_pcb442.csv', delimiter=',')
     # data_exp095 = np.genfromtxt('exponential095_numit25_pcb442.csv', delimiter=',')

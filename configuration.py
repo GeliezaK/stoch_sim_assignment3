@@ -101,7 +101,7 @@ if __name__ == '__main__':
     filepath = './tsp_configurations/a280.tsp.txt'
     config = TSPConfiguration(filepath).init_config()
     route = []
-    with open("cauchy_numit25_chain500_a280.csv_min_route") as f:
+    with open("data/cauchy_numit25_chain500_a280.csv_min_route") as f:
         for line in f:
             route.append(int(float(line)))
     # route = np.random.permutation(len(config.table))
