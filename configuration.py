@@ -13,13 +13,9 @@ class TSPConfiguration:
 
     def construct_coordinate_table(self):
         """
-        Read the coordinates from the file into a numpy-array.
-        :param filepath: (string) Path to the file with the city coordinates.
-        :return: (n x 2 numpy.array) A numpy-array that contains the two coordinates
-        for each of the n cities.
-
         Example:
-        table = construct_coordinate_table(./tsp_configurations/eil51.tsp.txt)
+        TSPConfig.filepath = "./tsp_configurations/eil51.tsp.txt"
+        table = TSPConfig.construct_coordinate_table()
         assert table[0, 0] == 37 #City 1 has coordinates [37, 52]
         assert table[0, 1] == 52
         """
@@ -47,9 +43,10 @@ class TSPConfiguration:
 
     def construct_input_graph(self):
         """
-        Return the graph that contains all cities from table and their respective distances.
-        :param table: (numpy.array) with 2D coordinates of each city
-        :return: (networkx.Graph) A completely connected graph with a node for every city. The edges
+        Sets self.graph to the graph that contains all cities from table and their respective distances. NB: the parameter
+        self.table needs to be initialized before this!
+
+        self.graph = (networkx.Graph) A completely connected graph with a node for every city. The edges
         have one attribute 'distance' which records the euclidean distance between the two connected cities.
         """
         K = nx.complete_graph(len(self.table))
@@ -67,12 +64,20 @@ class TSPConfiguration:
         return dist(coord_a, coord_b)
 
     def init_config(self):
+        """
+        Initialize the attributes self.table and self.graph.
+        :return: TSPConfiguration object.
+        """
         self.table = self.construct_coordinate_table()
         self.graph = self.construct_input_graph()
         print("Initialized config!")
         return self
 
     def plot_2D(self, route=[]):
+        """
+        Plot the route in the configuration in Euclidean space.
+        :param route: (list of int) A python list where each integer is the number of a city.
+        """
         plt.plot(self.table[:,0], self.table[:,1], 'o')
         plt.axis('equal')
         plt.title("Best solution found for a280 with Cauchy cooling\nwith a chain length of 500")
@@ -89,13 +94,18 @@ class TSPConfiguration:
         plt.show()
 
     def length(self, route):
-        """Determine the total length of a route in this configuration."""
+        """
+        Determine the total length of a route in this configuration.
+        :param route: (list of int) the route of which the length should be determined.
+        :return: (float) the length of the route in this configuration.
+        """
         length = 0
         for ind in range(len(route)):
             city_i = route[ind]
             city_j = route[ind +1] if ind+1 < len(route) else route[0]
             length += self.graph[city_i][city_j]['distance']
         return length
+
 
 if __name__ == '__main__':
     filepath = './tsp_configurations/a280.tsp.txt'

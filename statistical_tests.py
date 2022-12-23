@@ -6,9 +6,17 @@ def welch_test(a, b):
     res = ttest_ind(a, b, equal_var=False)
     print("T-value: ", np.round(res.statistic,2), " , p-value: ", np.round(res.pvalue,5))
 
+
 def import_data(filepath, k):
+    """
+    Import the data from csv file to a numpy array.
+    :param filepath: The csv-file where the generated data are stored.
+    :param k: (int) the row index (= temperature level) where the simulation data should be retrieved
+    :return: (numpy.array) 25*1 array with the current route lengths at temperature level k.
+    """
     data_array = np.genfromtxt(filepath, delimiter=',')
     return data_array[k,:]
+
 
 if __name__ == '__main__':
     filenames = ['data/boltzmann_numit25_a280.csv', 'data/cauchy_numit25_a280.csv',

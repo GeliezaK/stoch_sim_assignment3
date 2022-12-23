@@ -5,6 +5,7 @@ import re
 import numpy as np
 import time
 
+
 def plot_single_config(data, label, linestyle, color):
     """
     Plots the length of the solution against the temperature level (length of markov chain).
@@ -16,11 +17,11 @@ def plot_single_config(data, label, linestyle, color):
     """
     chain_length = np.size(data, axis=0)
     num_it = np.size(data, axis=1)
-    x = np.arange(1, chain_length +1)
+    x = np.arange(1, chain_length + 1)
     var = np.var(data, axis=1)
     error = calculate_error(var, num_it)
     assert chain_length == len(x)
-    plt.plot(x, np.mean(data, axis=1), linestyle = linestyle, color=color, label=label)
+    plt.plot(x, np.mean(data, axis=1), linestyle=linestyle, color=color, label=label)
     plt.fill_between(x, np.mean(data, axis=1) - error, np.mean(data, axis=1) + error, color=color, alpha=0.3)
 
 
@@ -32,6 +33,7 @@ def calculate_error(S, n):
     :return: length of half of the 95% confidence interval
     """
     return 1.96 * (np.sqrt(S) / np.sqrt(n))
+
 
 def read_optimal_route(filepath):
     """
@@ -109,8 +111,9 @@ def simulate_config(chain_length, num_it, cooling_schedule_name, filepath, Tstep
     data = np.zeros((chain_length, num_it))
     for j in range(num_it):
         print(f"---------------------- Cooling schedule: {cooling_schedule_name}, Iteration: {j} ---------------------")
-        lengths, route = experiment(chain_length=chain_length, inner_chain_length=100, cooling_schedule=cooling_schedule_name,
-                             T_start=10000, Tstep=Tstep)
+        lengths, route = experiment(chain_length=chain_length, inner_chain_length=100,
+                                    cooling_schedule=cooling_schedule_name,
+                                    T_start=10000, Tstep=Tstep)
         data[:, j] = np.array(lengths)
         if np.min(lengths) < min_length:
             min_route = route
@@ -119,7 +122,7 @@ def simulate_config(chain_length, num_it, cooling_schedule_name, filepath, Tstep
     config.plot_2D(min_route)
     if min_route == opt_route:
         print("*********************************** FOUND GLOBAL OPTIMUM! *********************************************")
-    np.savetxt(filepath+'_min_route', np.array(min_route), delimiter=',')
+    np.savetxt(filepath + '_min_route', np.array(min_route), delimiter=',')
     np.savetxt(filepath, data, delimiter=',')
 
 
@@ -151,7 +154,7 @@ def run_simulations():
 
 if __name__ == '__main__':
     start = time.time()
-    
+
     run_simulations()
 
     end = time.time()
