@@ -1,4 +1,14 @@
 # Assignment 3
+This is a discription of the directories and files of this project: 
+
+## data/
+The simulated data (lengths of the routes for each cooling schedule and each temperature level). 
+
+## test/ 
+Some functions to test the code and especially the initial parameters for the cooling schedules. 
+
+## tsp_configurations/
+The .txt TSP configurations that were provided for this assignment.
 
 ## simulation.py
 Run the main method of this file to run a SA-simulation and plot the convergence over the number of temperature levels. 
